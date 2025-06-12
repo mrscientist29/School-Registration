@@ -72,7 +72,7 @@ export const draftSchools = pgTable("draft_schools", {
 // Draft resources and support
 export const draftResources = pgTable("draft_resources", {
   id: serial("id").primaryKey(),
-  schoolCode: varchar("school_code").references(() => draftSchools.schoolCode).notNull(),
+  schoolCode: varchar("school_code").references(() => draftSchools.schoolCode).unique().notNull(),
   primaryTeachers: integer("primary_teachers"),
   middleTeachers: integer("middle_teachers"),
   undergraduateTeachers: integer("undergraduate_teachers").default(0),
@@ -94,7 +94,7 @@ export const draftResources = pgTable("draft_resources", {
 // Draft fees information
 export const draftFees = pgTable("draft_fees", {
   id: serial("id").primaryKey(),
-  schoolCode: varchar("school_code").references(() => draftSchools.schoolCode).notNull(),
+  schoolCode: varchar("school_code").references(() => draftSchools.schoolCode).unique().notNull(),
   paymentMethod: varchar("payment_method"), // cheque, deposit
   chequeNumber: varchar("cheque_number"),
   chequeDate: timestamp("cheque_date"),
