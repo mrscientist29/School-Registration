@@ -79,6 +79,10 @@ export default function SchoolsList({ onNext }: SchoolsListProps) {
     onNext?.(schoolCode);
   };
 
+  const handleNewRegistration = () => {
+    onNext?.();
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -208,7 +212,13 @@ export default function SchoolsList({ onNext }: SchoolsListProps) {
             <div className="text-center py-8 text-gray-500">
               <BookOpen className="w-12 h-12 mx-auto mb-4 text-gray-300" />
               <p>No schools registered yet.</p>
-              <p className="text-sm">Start by registering a new school.</p>
+              <p className="text-sm mb-4">Start by registering a new school.</p>
+              <Button 
+                onClick={handleNewRegistration}
+                className="bg-primary hover:bg-primary-dark text-white"
+              >
+                Start School Registration
+              </Button>
             </div>
           )}
         </div>

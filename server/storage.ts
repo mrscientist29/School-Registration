@@ -36,6 +36,7 @@ export interface IStorage {
   createDraftSchool(draft: InsertDraftSchool): Promise<DraftSchool>;
   updateDraftSchool(schoolCode: string, draft: Partial<InsertDraftSchool>): Promise<DraftSchool>;
   getDraftSchool(schoolCode: string): Promise<DraftSchool | undefined>;
+  getAllDraftSchools(): Promise<DraftSchool[]>;
   deleteDraftSchool(schoolCode: string): Promise<void>;
   
   // Draft resources operations
@@ -117,6 +118,13 @@ export class DatabaseStorage implements IStorage {
       .from(draftSchools)
       .where(eq(draftSchools.schoolCode, schoolCode));
     return draftSchool;
+  }
+
+  async getAllDraftSchools(): Promise<DraftSchool[]> {
+    return await db
+      .select()
+      .from(draftSchools)
+      .orderBy(desc(draftSchools.createdAt));
   }
 
   async deleteDraftSchool(schoolCode: string): Promise<void> {

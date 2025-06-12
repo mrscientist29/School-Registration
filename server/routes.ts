@@ -124,6 +124,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/drafts/schools", isAuthenticated, async (req, res) => {
+    try {
+      const drafts = await storage.getAllDraftSchools();
+      res.json(drafts);
+    } catch (error) {
+      console.error("Error fetching draft schools:", error);
+      res.status(500).json({ message: "Failed to fetch draft schools" });
+    }
+  });
+
   // Draft resources routes
   app.post("/api/drafts/resources", isAuthenticated, async (req, res) => {
     try {
