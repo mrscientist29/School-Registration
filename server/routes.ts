@@ -134,6 +134,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/drafts/school/:schoolCode", isAuthenticated, async (req, res) => {
+    try {
+      const { schoolCode } = req.params;
+      await storage.deleteDraftSchool(schoolCode);
+      res.json({ message: "Draft deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting draft school:", error);
+      res.status(500).json({ message: "Failed to delete draft school" });
+    }
+  });
+
   // Draft resources routes
   app.post("/api/drafts/resources", isAuthenticated, async (req, res) => {
     try {

@@ -2,6 +2,7 @@ import { useState } from "react";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import SchoolsList from "@/components/school/schools-list";
+import DraftsList from "@/components/school/drafts-list";
 import SchoolRegistrationForm from "@/components/school/school-registration-form";
 import ResourcesForm from "@/components/school/resources-form";
 import FeesForm from "@/components/school/fees-form";
@@ -51,6 +52,18 @@ export default function SchoolSetup() {
   };
 
   const renderTabContent = () => {
+    if (activeTab === "schools") {
+      return (
+        <div>
+          <DraftsList onEdit={(schoolCode) => {
+            setCurrentSchoolCode(schoolCode);
+            setActiveTab("register-school");
+          }} />
+          <SchoolsList onNext={handleNextTab} />
+        </div>
+      );
+    }
+
     const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component;
     if (!ActiveComponent) return null;
 
