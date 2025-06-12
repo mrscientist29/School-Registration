@@ -15,8 +15,12 @@ import { insertDraftFeesSchema, type InsertDraftFees, type DraftFees } from "@sh
 import { z } from "zod";
 
 const formSchema = insertDraftFeesSchema.extend({
+  chequeDate: z.date().nullable().optional(),
+});
+
+const completionSchema = formSchema.extend({
   disclaimerAccepted: z.boolean().refine(val => val === true, {
-    message: "You must accept the disclaimer to proceed",
+    message: "You must accept the disclaimer to complete registration",
   }),
 });
 
@@ -62,11 +66,18 @@ export default function FeesForm({
   // Load existing data into form
   useEffect(() => {
     if (existingDraft) {
-      form.reset({
-        ...existingDraft,
+      const formData = {
+        schoolCode: existingDraft.schoolCode,
+        paymentMethod: existingDraft.paymentMethod || "cheque",
+        chequeNumber: existingDraft.chequeNumber || "",
         chequeDate: existingDraft.chequeDate ? new Date(existingDraft.chequeDate) : null,
         amount: existingDraft.amount?.toString() || "20000.00",
-      });
+        headOfInstitution: existingDraft.headOfInstitution || "",
+        disclaimerAccepted: Boolean(existingDraft.disclaimerAccepted),
+        headSignature: existingDraft.headSignature || "",
+        institutionStamp: existingDraft.institutionStamp || "",
+      };
+      form.reset(formData);
     } else if (schoolCode) {
       form.setValue("schoolCode", schoolCode);
     }

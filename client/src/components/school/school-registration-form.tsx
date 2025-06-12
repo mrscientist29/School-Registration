@@ -79,11 +79,35 @@ export default function SchoolRegistrationForm({
   useEffect(() => {
     if (existingDraft) {
       setIsEditing(true);
-      form.reset({
-        ...existingDraft,
+      const formData = {
+        schoolCode: existingDraft.schoolCode || "",
+        schoolName: existingDraft.schoolName || "",
+        schoolAddress: existingDraft.schoolAddress || "",
+        contactNumbers: existingDraft.contactNumbers || "",
+        schoolType: existingDraft.schoolType || "",
+        academicYearStart: existingDraft.academicYearStart || "",
+        academicYearEnd: existingDraft.academicYearEnd || "",
+        gradeLevelFrom: existingDraft.gradeLevelFrom || "",
+        gradeLevelTill: existingDraft.gradeLevelTill || "",
         languages: Array.isArray(existingDraft.languages) ? existingDraft.languages : [],
+        otherLanguage: existingDraft.otherLanguage || "",
+        principalName: existingDraft.principalName || "",
+        principalEmail: existingDraft.principalEmail || "",
+        principalCell: existingDraft.principalCell || "",
+        primaryCoordinatorName: existingDraft.primaryCoordinatorName || "",
+        primaryCoordinatorEmail: existingDraft.primaryCoordinatorEmail || "",
+        primaryCoordinatorCell: existingDraft.primaryCoordinatorCell || "",
+        middleCoordinatorName: existingDraft.middleCoordinatorName || "",
+        middleCoordinatorEmail: existingDraft.middleCoordinatorEmail || "",
+        middleCoordinatorCell: existingDraft.middleCoordinatorCell || "",
+        gradeIV: existingDraft.gradeIV || 0,
+        gradeV: existingDraft.gradeV || 0,
+        gradeVI: existingDraft.gradeVI || 0,
+        gradeVII: existingDraft.gradeVII || 0,
+        gradeVIII: existingDraft.gradeVIII || 0,
         pspMspRegistration: Array.isArray(existingDraft.pspMspRegistration) ? existingDraft.pspMspRegistration : [],
-      });
+      };
+      form.reset(formData);
     }
   }, [existingDraft, form]);
 

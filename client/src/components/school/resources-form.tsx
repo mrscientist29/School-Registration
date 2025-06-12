@@ -70,10 +70,24 @@ export default function ResourcesForm({
   // Load existing data into form
   useEffect(() => {
     if (existingDraft) {
-      form.reset({
-        ...existingDraft,
+      const formData = {
+        schoolCode: existingDraft.schoolCode || "",
+        primaryTeachers: existingDraft.primaryTeachers || 0,
+        middleTeachers: existingDraft.middleTeachers || 0,
+        undergraduateTeachers: existingDraft.undergraduateTeachers || 0,
+        graduateTeachers: existingDraft.graduateTeachers || 0,
+        postgraduateTeachers: existingDraft.postgraduateTeachers || 0,
+        educationDegreeTeachers: existingDraft.educationDegreeTeachers || 0,
+        totalWeeks: existingDraft.totalWeeks || 0,
+        weeklyPeriods: existingDraft.weeklyPeriods || 0,
+        periodDuration: existingDraft.periodDuration || 0,
+        maxStudents: existingDraft.maxStudents || 0,
         facilities: Array.isArray(existingDraft.facilities) ? existingDraft.facilities : [],
-      });
+        otherFacility1: existingDraft.otherFacility1 || "",
+        otherFacility2: existingDraft.otherFacility2 || "",
+        otherFacility3: existingDraft.otherFacility3 || "",
+      };
+      form.reset(formData);
     } else if (schoolCode) {
       form.setValue("schoolCode", schoolCode);
     }
