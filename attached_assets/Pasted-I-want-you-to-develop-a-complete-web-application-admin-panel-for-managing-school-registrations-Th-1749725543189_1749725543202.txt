@@ -1,0 +1,172 @@
+I want you to develop a complete web application (admin panel) for managing school registrations. This is a web app (not mobile), and the backend database should be PostgreSQL. Below is the complete structure, features, and flow of the application:
+
+💡 Overview
+The application should allow an Admin to:
+
+Log in securely.
+
+Register new schools through a multi-tab form.
+
+Perform CRUD operations on school data.
+
+Save school registration data as drafts.
+
+Activate/deactivate schools.
+
+Create usernames/passwords for schools after complete registration.
+
+View all registered schools in a list.
+
+Maintain a relationship between all tables via school_code.
+
+🖥️ Stack (Choose One):
+You can choose based on efficiency:
+
+MERN Stack (MongoDB optional → use PostgreSQL with Sequelize or Prisma if using Node.js)
+
+OR Python Django (Recommended with Django REST + React frontend)
+
+Frontend: React (preferred)
+Styling: Tailwind CSS or Bootstrap
+Database: PostgreSQL
+Authentication: Basic login for Admin
+
+🧭 Flow:
+Admin Login Page
+
+Basic login form
+
+Validates admin credentials
+
+Redirect to dashboard on success
+
+Left Sidebar Menu:
+
+Dashboard (no detailed functionality yet)
+
+School Setup (main feature)
+
+Instructions/Guidelines tab
+
+School Registration
+
+Resource and Support
+
+Fees
+
+(Other menu items can be placeholders)
+
+School Setup Section (4 Tabs):
+
+Tab 1: Schools (Instructions & List)
+Display instructions/guidelines for form filling.
+
+Below that, a table showing all registered schools:
+
+Columns: School Code, School Name, Contact No.
+
+Actions: Edit, Activate/Deactivate, Create Credentials
+
+Tab 2: School Registration
+Show a form to input school details.
+
+Fields will be provided (or you can reference from provided screenshots).
+
+Bottom Buttons:
+
+Save Draft
+
+Next: Resource and Support
+
+On Save Draft, store all data in a draft_schools table (not in final schools table).
+
+On Next, move to Resource and Support tab (persist draft data).
+
+Tab 3: Resource and Support
+Related fields for school’s infrastructure/resources.
+
+Same buttons:
+
+Save Draft
+
+Next: Fees
+
+Tab 4: Fees
+Fee-related details for the school.
+
+Buttons:
+
+Save Draft
+
+Complete Registration
+
+✅ On Complete Registration, all data (from draft) is saved to proper relational tables:
+
+schools, school_resources, school_fees, etc.
+
+Draft is deleted or marked as finalized.
+
+🧩 Key Functionalities:
+✅ CRUD Operations: Admin can edit any school’s data using the school code.
+
+✅ Activate/Deactivate: Toggle school status.
+
+✅ Save to Draft:
+
+Each tab must support saving to draft.
+
+Draft data persists between sessions.
+
+✅ Complete Registration:
+
+Data from all draft tabs moves to main relational tables.
+
+Show confirmation and add to "Registered Schools" table in Tab 1.
+
+✅ Create Username/Password:
+
+Allow admin to assign login credentials to each school after registration.
+
+🗂️ Database Structure (Example Schema):
+(Relational, based on school_code)
+
+draft_schools
+
+draft_resources
+
+draft_fees
+
+schools
+
+resources
+
+fees
+
+credentials
+
+All tables should be related by school_code (unique identifier).
+
+🎨 Design & Branding
+Theme color: Green (as seen in the provided screenshot).
+
+Use the provided logo in the header and login screen.
+
+UI should be clean, responsive, and admin-friendly.
+
+🔐 Authentication
+Basic login system for Admin only (no school logins yet).
+
+Role-based access is not needed at this stage.
+
+✅ Summary
+The goal is a full-featured admin panel that allows step-by-step school registration with:
+
+Draft saving,
+
+CRUD functionality,
+
+Multi-tab input,
+
+Final registration control.
+
+The app should be built modularly so features like school logins or analytics can be added later.
