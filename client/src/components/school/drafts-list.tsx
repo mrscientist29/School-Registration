@@ -1,5 +1,5 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +14,7 @@ import { FileText, Edit, Trash2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { DraftSchool } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
 
 interface DraftsListProps {
   onEdit?: (schoolCode: string) => void;
@@ -21,6 +22,7 @@ interface DraftsListProps {
 
 export default function DraftsList({ onEdit }: DraftsListProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: schools, isLoading } = useQuery<DraftSchool[]>({
     queryKey: ["/api/drafts/schools"],
@@ -55,6 +57,13 @@ export default function DraftsList({ onEdit }: DraftsListProps) {
       deleteMutation.mutate(schoolCode);
     }
   };
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  const totalPages = schools ? Math.ceil(schools.length / itemsPerPage) : 0;
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentSchools = schools ? schools.slice(indexOfFirstItem, indexOfLastItem) : [];
 
   if (isLoading) {
     return (
@@ -93,7 +102,7 @@ export default function DraftsList({ onEdit }: DraftsListProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {schools.map((school) => (
+                {currentSchools.map((school) => (
                   <TableRow key={school.schoolCode}>
                     <TableCell className="font-medium">{school.schoolCode}</TableCell>
                     <TableCell>{school.schoolName}</TableCell>
@@ -130,6 +139,15 @@ export default function DraftsList({ onEdit }: DraftsListProps) {
                 ))}
               </TableBody>
             </Table>
+            <div className="mt-4 flex justify-between items-center">
+              <Button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1} variant="outline" size="sm">
+                Previous
+              </Button>
+              <span>Page {currentPage} of {totalPages}</span>
+              <Button onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} variant="outline" size="sm">
+                Next
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="text-center py-6 text-gray-500">

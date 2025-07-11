@@ -15,22 +15,24 @@ type Tab = "schools" | "register-school" | "resources" | "fees";
 export default function SchoolSetup() {
   const [activeTab, setActiveTab] = useState<Tab>("schools");
   const [currentSchoolCode, setCurrentSchoolCode] = useState<string>("");
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
 
   const tabs = [
-    { id: "schools" as Tab, label: "Schools", component: SchoolsList },
-    { id: "register-school" as Tab, label: "Register School", component: SchoolRegistrationForm },
-    { id: "resources" as Tab, label: "Resources and Support", component: ResourcesForm },
-    { id: "fees" as Tab, label: "Fees", component: FeesForm },
+    { id: "schools" as Tab, label: "Schools" },
+    { id: "register-school" as Tab, label: "Register School" },
+    { id: "resources" as Tab, label: "Resources and Support" },
+    { id: "fees" as Tab, label: "Fees" },
   ];
 
   const handleTabChange = (tabId: Tab) => {
     setActiveTab(tabId);
   };
 
-  const handleNextTab = (schoolCode?: string) => {
+  const handleNextTab = (schoolCode?: string, editMode: boolean = false) => {
     if (schoolCode) {
       setCurrentSchoolCode(schoolCode);
     }
+    setIsEditMode(editMode);
 
     const currentIndex = tabs.findIndex(tab => tab.id === activeTab);
     if (currentIndex < tabs.length - 1) {
@@ -46,43 +48,57 @@ export default function SchoolSetup() {
   };
 
   const handleCompleteRegistration = () => {
-    // Reset to schools list after completion
     setActiveTab("schools");
     setCurrentSchoolCode("");
+    setIsEditMode(false);
   };
 
   const renderTabContent = () => {
     if (activeTab === "schools") {
       return (
         <div>
-          <DraftsList onEdit={(schoolCode) => {
-            setCurrentSchoolCode(schoolCode);
-            setActiveTab("register-school");
-          }} />
-          <SchoolsList onNext={handleNextTab} />
+          <DraftsList
+            onEdit={(schoolCode) => {
+              setCurrentSchoolCode(schoolCode);
+              setIsEditMode(false); // Draft mode
+              setActiveTab("register-school");
+            }}
+          />
+          <SchoolsList
+            onNext={(schoolCode) => {
+              handleNextTab(schoolCode, true); // Registered schools = editMode = true
+            }}
+          />
         </div>
       );
     }
-
-    const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component;
-    if (!ActiveComponent) return null;
 
     const commonProps = {
       onNext: handleNextTab,
       onPrevious: handlePreviousTab,
       onComplete: handleCompleteRegistration,
       schoolCode: currentSchoolCode,
+      isEditMode: isEditMode,
     };
 
-    return <ActiveComponent {...commonProps} />;
+    switch (activeTab) {
+      case "register-school":
+        return <SchoolRegistrationForm {...commonProps} />;
+      case "resources":
+        return <ResourcesForm {...commonProps} />;
+      case "fees":
+        return <FeesForm {...commonProps} />;
+      default:
+        return null;
+    }
   };
 
   return (
     <div className="min-h-screen flex bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-0 md:ml-64">
         <Header />
-        <main className="p-6">
+        <main className="p-4 md:p-6">
           {/* Tab Navigation */}
           <div className="mb-6">
             <nav className="flex space-x-8 border-b border-gray-200">

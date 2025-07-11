@@ -10,9 +10,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { BookOpen, Eye, Edit, Trash2, Upload, Download } from "lucide-react";
+import { BookOpen, Eye, Edit, Trash2, Upload, Download, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { School } from "@shared/schema";
+import { useState } from "react";
 
 interface SchoolsListProps {
   onNext?: (schoolCode?: string) => void;
@@ -75,6 +76,28 @@ export default function SchoolsList({ onNext }: SchoolsListProps) {
     toggleMutation.mutate(schoolCode);
   };
 
+  const handleExportPDF = async (schoolCode: string) => {
+    try {
+      const response = await fetch(`/api/schools/${schoolCode}/pdf`);
+      if (!response.ok) throw new Error('Failed to fetch PDF');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${schoolCode}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to export PDF",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleEdit = (schoolCode: string) => {
     onNext?.(schoolCode);
   };
@@ -82,6 +105,13 @@ export default function SchoolsList({ onNext }: SchoolsListProps) {
   const handleNewRegistration = () => {
     onNext?.();
   };
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const totalPages = schools ? Math.ceil(schools.length / itemsPerPage) : 0;
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentSchools = schools ? schools.slice(indexOfFirstItem, indexOfLastItem) : [];
 
   if (isLoading) {
     return (
@@ -142,7 +172,7 @@ export default function SchoolsList({ onNext }: SchoolsListProps) {
         {/* Schools Table */}
         <div>
           <h4 className="font-semibold text-gray-900 mb-4">Schools</h4>
-          {schools && schools.length > 0 ? (
+          {currentSchools && currentSchools.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -154,7 +184,7 @@ export default function SchoolsList({ onNext }: SchoolsListProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {schools.map((school) => (
+                {currentSchools.map((school) => (
                   <TableRow key={school.schoolCode}>
                     <TableCell className="font-medium">{school.schoolCode}</TableCell>
                     <TableCell>{school.schoolName}</TableCell>
@@ -186,6 +216,15 @@ export default function SchoolsList({ onNext }: SchoolsListProps) {
                           onClick={() => handleEdit(school.schoolCode)}
                         >
                           <Edit className="w-4 h-4" />
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-indigo-600 hover:text-indigo-900"
+                          onClick={() => handleExportPDF(school.schoolCode)}
+                        >
+                          <FileText className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -221,6 +260,15 @@ export default function SchoolsList({ onNext }: SchoolsListProps) {
               </Button>
             </div>
           )}
+          <div className="mt-4 flex justify-between items-center">
+            <Button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1} variant="outline" size="sm">
+              Previous
+            </Button>
+            <span>Page {currentPage} of {totalPages}</span>
+            <Button onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} variant="outline" size="sm">
+              Next
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

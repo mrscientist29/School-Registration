@@ -27,22 +27,35 @@ interface SchoolRegistrationFormProps {
   onNext?: (schoolCode?: string) => void;
   onPrevious?: () => void;
   schoolCode?: string;
+  isEditMode?: boolean;
 }
 
 export default function SchoolRegistrationForm({ 
   onNext, 
   onPrevious, 
-  schoolCode 
+  schoolCode,
+  isEditMode = false
 }: SchoolRegistrationFormProps) {
+  console.log('Form mode:', {isEditMode, schoolCode});
+  
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const [isRegisteredSchool, setIsRegisteredSchool] = useState(false);
 
-  // Load existing draft if schoolCode is provided
-  const { data: existingDraft } = useQuery<DraftSchool>({
-    queryKey: ["/api/drafts/school", schoolCode],
+  // Check if school is registered
+  const { data: isRegistered } = useQuery<boolean>({
+    queryKey: ['school-registered', schoolCode],
     enabled: !!schoolCode,
+    queryFn: async () => {
+      const response = await fetch(`/api/schools/${schoolCode}`);
+      return response.ok;
+    }
   });
 
+  // Determine final mode (edit if registered or forced via prop)
+  const isFinalized = isRegistered || isEditMode;
+
+  // Initialize form with defaults
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -75,83 +88,150 @@ export default function SchoolRegistrationForm({
     },
   });
 
-  // Load existing data into form
+  // Edit Mode: Fetch from /api/schools
+  const { data: schoolData, isLoading: isSchoolLoading } = useQuery<DraftSchool | null>({
+    queryKey: ['school', schoolCode],
+    enabled: isFinalized && !!schoolCode,
+    queryFn: async () => {
+      const response = await fetch(`/api/schools/${schoolCode}`);
+      if (!response.ok) throw new Error('School not found');
+      return await response.json();
+    },
+    retry: false
+  });
+
+  // Draft Mode: Fetch from /api/drafts
+  const { data: draftData, isLoading: isDraftLoading } = useQuery<DraftSchool | null>({
+    queryKey: ['draft', schoolCode],
+    enabled: !isFinalized && !!schoolCode,
+    queryFn: async () => {
+      try {
+        const response = await fetch(`/api/drafts/school/${schoolCode}`);
+        return response.ok ? await response.json() : null;
+      } catch {
+        return null;
+      }
+    },
+    retry: false
+  });
+
+  // Initialize form with appropriate data
   useEffect(() => {
-    if (existingDraft) {
-      setIsEditing(true);
-      const formData = {
-        schoolCode: existingDraft.schoolCode || "",
-        schoolName: existingDraft.schoolName || "",
-        schoolAddress: existingDraft.schoolAddress || "",
-        contactNumbers: existingDraft.contactNumbers || "",
-        schoolType: existingDraft.schoolType || "",
-        academicYearStart: existingDraft.academicYearStart || "",
-        academicYearEnd: existingDraft.academicYearEnd || "",
-        gradeLevelFrom: existingDraft.gradeLevelFrom || "",
-        gradeLevelTill: existingDraft.gradeLevelTill || "",
-        languages: Array.isArray(existingDraft.languages) ? existingDraft.languages : [],
-        otherLanguage: existingDraft.otherLanguage || "",
-        principalName: existingDraft.principalName || "",
-        principalEmail: existingDraft.principalEmail || "",
-        principalCell: existingDraft.principalCell || "",
-        primaryCoordinatorName: existingDraft.primaryCoordinatorName || "",
-        primaryCoordinatorEmail: existingDraft.primaryCoordinatorEmail || "",
-        primaryCoordinatorCell: existingDraft.primaryCoordinatorCell || "",
-        middleCoordinatorName: existingDraft.middleCoordinatorName || "",
-        middleCoordinatorEmail: existingDraft.middleCoordinatorEmail || "",
-        middleCoordinatorCell: existingDraft.middleCoordinatorCell || "",
-        gradeIV: existingDraft.gradeIV || 0,
-        gradeV: existingDraft.gradeV || 0,
-        gradeVI: existingDraft.gradeVI || 0,
-        gradeVII: existingDraft.gradeVII || 0,
-        gradeVIII: existingDraft.gradeVIII || 0,
-        pspMspRegistration: Array.isArray(existingDraft.pspMspRegistration) ? existingDraft.pspMspRegistration : [],
-      };
-      form.reset(formData);
+    if (isFinalized && schoolData) {
+      form.reset(schoolData);
+    } else if (!isFinalized && draftData) {
+      form.reset(draftData);
+    } else if (schoolCode) {
+      form.setValue('schoolCode', schoolCode);
     }
-  }, [existingDraft, form]);
+  }, [schoolData, draftData, schoolCode, isFinalized, form]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      return await apiRequest("POST", "/api/drafts/school", data);
+      console.log('Saving data:', data, 'isFinalized:', isFinalized);
+      
+      if (isFinalized) {
+        // Edit mode: PATCH to /api/schools
+        const response = await fetch(`/api/schools/${data.schoolCode}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (!response.ok) throw new Error('Failed to update school');
+        return await response.json();
+      } else {
+        // Draft mode: POST to /api/drafts/school
+        const payload = {
+          ...data,
+          schoolCode: schoolCode || data.schoolCode // Ensure schoolCode is included
+        };
+        console.log('Draft payload:', payload);
+        
+        const response = await fetch(`/api/drafts/school`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Draft save failed:', response.status, errorText);
+          throw new Error(`Failed to save draft: ${response.status}`);
+        }
+        return await response.json();
+      }
     },
-    onSuccess: () => {
+    onSuccess: (result, variables) => {
+      console.log('Save successful:', result);
       toast({
         title: "Success",
-        description: "School draft saved successfully",
+        description: isFinalized 
+          ? "School updated successfully" 
+          : "School draft saved successfully",
       });
     },
     onError: (error) => {
+      console.error('Save error:', error);
       toast({
         title: "Error",
-        description: "Failed to save school draft",
+        description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  const handleSaveDraft = () => {
-    const data = form.getValues();
-    saveMutation.mutate(data);
-  };
-
-  const handleNext = () => {
-    const data = form.getValues();
-    if (!data.schoolCode || !data.schoolName) {
+  const handleSubmit = form.handleSubmit(async (data) => {
+    try {
+      await saveMutation.mutateAsync(data);
+      if (isFinalized) {
+        // In edit mode, navigate to resources after successful update
+        onNext?.();
+      } else {
+        // In draft mode, show success and optionally proceed
+        toast({ 
+          title: "Success", 
+          description: "Draft values saved successfully" 
+        });
+        onNext?.(data.schoolCode);
+      }
+    } catch (error) {
       toast({
         title: "Error",
-        description: "Please fill in at least School Code and School Name",
+        description: error instanceof Error ? error.message : "Operation failed",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleSaveDraft = async () => {
+    const data = form.getValues();
+    console.log('Saving draft with data:', data);
+    
+    // Basic validation for draft
+    if (!data.schoolCode && !schoolCode) {
+      toast({
+        title: "Error",
+        description: "School Code is required to save draft",
         variant: "destructive",
       });
       return;
     }
-
-    saveMutation.mutate(data, {
-      onSuccess: () => {
-        onNext?.(data.schoolCode);
-      },
-    });
+    
+    try {
+      await saveMutation.mutateAsync(data);
+    } catch (error) {
+      // Error handling is done in the mutation
+    }
   };
+
+  if (isSchoolLoading || isDraftLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]">
+          <span className="sr-only">Loading...</span>
+        </div>
+      </div>
+    );
+  }
 
   const languageOptions = ["english", "urdu", "other"];
   const gradeOptions = ["gradeIV", "gradeV", "gradeVI", "gradeVII", "gradeVIII"];
@@ -161,7 +241,7 @@ export default function SchoolRegistrationForm({
       <div className="bg-primary text-white px-6 py-4 rounded-t-lg flex items-center">
         <BookOpen className="w-6 h-6 mr-3" />
         <h3 className="text-lg font-semibold">
-          Step 1: {isEditing ? "Edit" : "Register New"} School
+          Step 1: {isFinalized ? "Edit" : "Register New"} School
         </h3>
       </div>
 
@@ -190,7 +270,11 @@ export default function SchoolRegistrationForm({
                   <FormItem>
                     <FormLabel>School Code</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter school code" {...field} />
+                      <Input 
+                        placeholder="Enter school code" 
+                        {...field} 
+                        disabled={!!schoolCode} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -624,21 +708,23 @@ export default function SchoolRegistrationForm({
                 Previous: School Registration
               </Button>
               <div className="space-x-3">
+                {!isFinalized && (
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    disabled={saveMutation.isPending}
+                    onClick={handleSaveDraft}
+                  >
+                    {saveMutation.isPending ? 'Saving...' : 'Save Draft'}
+                  </Button>
+                )}
                 <Button 
-                  type="button" 
-                  variant="outline"
-                  onClick={handleSaveDraft}
+                  type="submit"
                   disabled={saveMutation.isPending}
-                >
-                  Save Draft
-                </Button>
-                <Button 
-                  type="button" 
-                  onClick={handleNext}
-                  disabled={saveMutation.isPending}
+                  onClick={handleSubmit}
                   className="bg-primary-dark hover:bg-primary"
                 >
-                  Next: Resources and Support
+                  {isFinalized ? (saveMutation.isPending ? 'Updating...' : 'Update School') : (saveMutation.isPending ? 'Submitting...' : 'Next: Resources')}
                 </Button>
               </div>
             </div>

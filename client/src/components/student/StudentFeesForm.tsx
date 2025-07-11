@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -9,14 +9,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { BookOpen, CheckCircle, Upload, X, Image } from "lucide-react";
+import { Users, CheckCircle, Upload, X, Image, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { SchoolFees, DraftFees } from '@shared/schema';
-import { insertDraftFeesSchema } from '@shared/schema';
-import { useNavigate } from "react-router-dom";
+import { StudentFeesInterface } from '@shared/schema';
+import { insertStudentFeesSchema } from '@shared/schema';
 
-const formSchema = insertDraftFeesSchema.extend({
+const formSchema = insertStudentFeesSchema.extend({
   depositSlipUrl: z.string().optional(),
 });
 
@@ -28,22 +27,21 @@ const completionSchema = formSchema.extend({
 
 type FormData = z.infer<typeof formSchema>;
 
-interface FeesFormProps {
-  onNext?: () => void;
-  onPrevious?: () => void;
-  onComplete?: () => void;
+interface StudentFeesFormProps {
   schoolCode?: string;
-  isEditMode?: boolean;
+  feesData?: {
+    primaryAmount: number;
+    middleAmount: number;
+    totalFee: number;
+    primaryCount: number;
+    middleCount: number;
+  };
 }
 
-export default function FeesForm({ 
-  onNext, 
-  onPrevious, 
-  onComplete,
+export default function StudentFeesForm({ 
   schoolCode,
-  isEditMode = true
-}: FeesFormProps) {
-  const navigate = useNavigate();
+  feesData
+}: StudentFeesFormProps) {
   const { toast } = useToast();
   const [showSuccess, setShowSuccess] = useState(false);
   const [previousPaymentMethod, setPreviousPaymentMethod] = useState<string>("");
@@ -51,32 +49,69 @@ export default function FeesForm({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadedDepositSlipUrl, setUploadedDepositSlipUrl] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
-
-  // Load existing draft if schoolCode is provided
-  const { data: existingDraft } = useQuery<DraftFees>({
-    queryKey: ["drafts/fees", schoolCode],
-    enabled: !!schoolCode && !isEditMode,
+  
+  // Fetch school data to calculate fees if feesData is not provided
+  const { data: schoolData } = useQuery({
+    queryKey: ["school-data-fees", schoolCode],
     queryFn: async () => {
-      const response = await fetch(`/api/drafts/fees/${schoolCode}`);
-      if (!response.ok) throw new Error('Failed to fetch fees draft');
+      if (!schoolCode) return null;
+      const response = await fetch(`/api/schools/${schoolCode}`);
+      if (!response.ok) {
+        if (response.status === 404) return null;
+        throw new Error('Failed to fetch school data');
+      }
       return await response.json();
-    }
+    },
+    enabled: !!schoolCode && !feesData
   });
+  
+  // Calculate fees from school registration data if feesData is not provided
+  const calculatedFeesData = useMemo(() => {
+    if (feesData) return feesData;
+    if (!schoolData) {
+      return {
+        primaryAmount: 0,
+        middleAmount: 0,
+        totalFee: 0,
+        primaryCount: 0,
+        middleCount: 0
+      };
+    }
+    
+    const primaryCount = (schoolData.gradeIV || 0) + (schoolData.gradeV || 0);
+    const middleCount = (schoolData.gradeVI || 0) + (schoolData.gradeVII || 0) + (schoolData.gradeVIII || 0);
+    const primaryAmount = primaryCount * 2000;
+    const middleAmount = middleCount * 2250;
+    const totalFee = primaryAmount + middleAmount;
+    
+    return {
+      primaryAmount,
+      middleAmount,
+      totalFee,
+      primaryCount,
+      middleCount
+    };
+  }, [feesData, schoolData]);
 
-  // Load registered school fees in edit mode
-  const { data: registeredFees } = useQuery<SchoolFees>({
-    queryKey: ["schools/fees", schoolCode],
-    enabled: !!schoolCode && isEditMode,
+  // Load existing student fees if schoolCode is provided
+  const { data: existingFees } = useQuery<StudentFeesInterface>({
+    queryKey: ["student-fees", schoolCode],
+    enabled: !!schoolCode,
     queryFn: async () => {
-      const response = await fetch(`/api/schools/${schoolCode}/fees`);
-      if (!response.ok) throw new Error('Failed to fetch school fees');
+      const response = await fetch(`/api/schools/${schoolCode}/student-fees`);
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null; // No fees found, return null
+        }
+        throw new Error('Failed to fetch student fees');
+      }
       return await response.json();
     }
   });
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    mode: "onChange", // Enable real-time validation
+    mode: "onChange",
     defaultValues: {
       schoolCode: schoolCode || "",
       paymentMethod: "cheque",
@@ -85,7 +120,11 @@ export default function FeesForm({
       depositSlipNumber: "",
       depositDate: null,
       depositPayOrderNumber: "",
-      amount: "20000.00",
+      totalAmount: calculatedFeesData?.totalFee?.toString() || "0",
+      primaryAmount: calculatedFeesData?.primaryAmount?.toString() || "0",
+      middleAmount: calculatedFeesData?.middleAmount?.toString() || "0",
+      primaryCandidates: calculatedFeesData?.primaryCount || 0,
+      middleCandidates: calculatedFeesData?.middleCount || 0,
       headOfInstitution: "",
       disclaimerAccepted: false,
       headSignature: "",
@@ -96,7 +135,7 @@ export default function FeesForm({
   // Watch payment method to conditionally show fields
   const paymentMethod = form.watch("paymentMethod");
   
-  // Handle payment method changes - FIXED VERSION
+  // Handle payment method changes
   useEffect(() => {
     if (paymentMethod && paymentMethod !== previousPaymentMethod) {
       // Clear payment-specific fields when switching methods
@@ -114,57 +153,29 @@ export default function FeesForm({
   
   // Load existing data into form
   useEffect(() => {
-    if (existingDraft) {
-      console.log('Loading fees draft data:', existingDraft);
+    if (existingFees) {
+      console.log('Loading student fees data:', existingFees);
       const formData = {
-        schoolCode: existingDraft.schoolCode || "",
-        paymentMethod: existingDraft.paymentMethod || "cheque",
-        chequeNumber: existingDraft.chequeNumber || "",
-        chequeDate: existingDraft.chequeDate 
-          ? (new Date(existingDraft.chequeDate).toString() === 'Invalid Date' ? null : new Date(existingDraft.chequeDate)) 
+        schoolCode: existingFees.schoolCode || "",
+        paymentMethod: existingFees.paymentMethod || "cheque",
+        chequeNumber: existingFees.chequeNumber || "",
+        chequeDate: existingFees.chequeDate 
+          ? (new Date(existingFees.chequeDate).toString() === 'Invalid Date' ? null : new Date(existingFees.chequeDate)) 
           : null,
-        depositSlipNumber: existingDraft.depositSlipNumber || "",
-        depositDate: existingDraft.depositDate 
-          ? (new Date(existingDraft.depositDate).toString() === 'Invalid Date' ? null : new Date(existingDraft.depositDate)) 
+        depositSlipNumber: existingFees.depositSlipNumber || "",
+        depositDate: existingFees.depositDate 
+          ? (new Date(existingFees.depositDate).toString() === 'Invalid Date' ? null : new Date(existingFees.depositDate)) 
           : null,
-        depositPayOrderNumber: existingDraft.depositPayOrderNumber || "",
-        amount: existingDraft.amount?.toString() || "20000.00",
-        headOfInstitution: existingDraft.headOfInstitution || "",
-        disclaimerAccepted: Boolean(existingDraft.disclaimerAccepted),
-        headSignature: existingDraft.headSignature || "",
-        institutionStamp: existingDraft.institutionStamp || "",
-      };
-      // Clear irrelevant fields based on the loaded payment method
-      if (formData.paymentMethod === 'cheque') {
-        formData.depositSlipNumber = null;
-        formData.depositDate = null;
-        formData.depositPayOrderNumber = null;
-      } else if (formData.paymentMethod === 'deposit') {
-        formData.chequeNumber = null;
-        formData.chequeDate = null;
-      }
-
-      form.reset(formData);
-      setPreviousPaymentMethod(formData.paymentMethod);
-    } else if (registeredFees) {
-      console.log('Loading registered school fees:', registeredFees);
-      const formData = {
-        schoolCode: registeredFees.schoolCode || "",
-        paymentMethod: registeredFees.paymentMethod || "cheque",
-        chequeNumber: registeredFees.chequeNumber || "",
-        chequeDate: registeredFees.chequeDate 
-          ? (new Date(registeredFees.chequeDate).toString() === 'Invalid Date' ? null : new Date(registeredFees.chequeDate)) 
-          : null,
-        depositSlipNumber: registeredFees.depositSlipNumber || "",
-        depositDate: registeredFees.depositDate 
-          ? (new Date(registeredFees.depositDate).toString() === 'Invalid Date' ? null : new Date(registeredFees.depositDate)) 
-          : null,
-        depositPayOrderNumber: registeredFees.depositPayOrderNumber || "",
-        amount: registeredFees.amount?.toString() || "20000.00",
-        headOfInstitution: registeredFees.headOfInstitution || "",
-        disclaimerAccepted: Boolean(registeredFees.disclaimerAccepted),
-        headSignature: registeredFees.headSignature || "",
-        institutionStamp: registeredFees.institutionStamp || "",
+        depositPayOrderNumber: existingFees.depositPayOrderNumber || "",
+        totalAmount: existingFees.totalAmount?.toString() || "0",
+        primaryAmount: existingFees.primaryAmount?.toString() || "0",
+        middleAmount: existingFees.middleAmount?.toString() || "0",
+        primaryCandidates: existingFees.primaryCandidates || 0,
+        middleCandidates: existingFees.middleCandidates || 0,
+        headOfInstitution: existingFees.headOfInstitution || "",
+        disclaimerAccepted: Boolean(existingFees.disclaimerAccepted),
+        headSignature: existingFees.headSignature || "",
+        institutionStamp: existingFees.institutionStamp || "",
       };
 
       // Clear irrelevant fields based on the loaded payment method
@@ -181,73 +192,73 @@ export default function FeesForm({
       setPreviousPaymentMethod(formData.paymentMethod);
     } else if (schoolCode) {
       form.setValue("schoolCode", schoolCode);
-      setPreviousPaymentMethod("cheque"); // Set initial value
+      setPreviousPaymentMethod("cheque");
     }
-  }, [existingDraft, registeredFees, schoolCode, form]);
+  }, [existingFees, schoolCode, form]);
+
+  // Update form when calculatedFeesData changes
+  useEffect(() => {
+    if (calculatedFeesData) {
+      form.setValue("totalAmount", calculatedFeesData.totalFee.toString());
+      form.setValue("primaryAmount", calculatedFeesData.primaryAmount.toString());
+      form.setValue("middleAmount", calculatedFeesData.middleAmount.toString());
+      form.setValue("primaryCandidates", calculatedFeesData.primaryCount);
+      form.setValue("middleCandidates", calculatedFeesData.middleCount);
+    }
+  }, [calculatedFeesData, form]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      console.log('Saving data:', data);
+      console.log('Saving student fees data:', data);
       
       // Prepare data for submission
       const submitData = {
         ...data,
-        amount: data.amount || "20000.00", // Ensure amount is a string
+        totalAmount: data.totalAmount || "0",
+        primaryAmount: data.primaryAmount || "0",
+        middleAmount: data.middleAmount || "0",
         chequeDate: data.chequeDate ? data.chequeDate.toISOString() : null,
         depositDate: data.depositDate ? data.depositDate.toISOString() : null,
       };
       
-      console.log('Submit data:', submitData);
+      console.log('Submit student fees data:', submitData);
       
-      if (isEditMode) {
-        const response = await fetch(`/api/schools/${data.schoolCode}/fees`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(submitData)
-        });
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Update failed:', errorText);
-          throw new Error(`Failed to update fees: ${response.status}`);
-        }
-        return await response.json();
-      } else {
-        const response = await fetch('/api/drafts/fees', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(submitData)
-        });
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Save draft failed:', errorText);
-          throw new Error(`Failed to save draft: ${response.status}`);
-        }
-        return await response.json();
+      const response = await fetch(`/api/schools/${data.schoolCode}/student-fees`, {
+        method: existingFees ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(submitData)
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Save failed:', errorText);
+        throw new Error(`Failed to save student fees: ${response.status}`);
       }
+      return await response.json();
     },
     onSuccess: (data) => {
       console.log('Save success:', data);
-      // Invalidate and refetch the fees data
-      queryClient.invalidateQueries({ queryKey: ["schools/fees", schoolCode] });
-      queryClient.invalidateQueries({ queryKey: ["drafts/fees", schoolCode] });
+      // Invalidate and refetch the student fees data
+      queryClient.invalidateQueries({ queryKey: ["student-fees", schoolCode] });
       
       toast({
         title: "Success",
-        description: isEditMode 
-          ? "Fees updated successfully" 
-          : "Fees draft saved successfully",
+        description: existingFees 
+          ? "Student fees updated successfully" 
+          : "Student fees saved successfully",
       });
-      if (isEditMode) {
-        navigate("/school-setup");
-      }
+      setShowSuccess(true);
+      
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => {
+        setShowSuccess(false);
+      }, 3000);
     },
     onError: (error) => {
       console.error('Save error:', error);
       toast({
         title: "Error",
-        description: isEditMode 
-          ? `Failed to update fees: ${error.message}` 
-          : `Failed to save fees draft: ${error.message}`,
+        description: `Failed to save student fees: ${error.message}`,
         variant: "destructive",
       });
     },
@@ -288,38 +299,70 @@ export default function FeesForm({
     },
   });
 
-  const completeMutation = useMutation({
-    mutationFn: async () => {
-      if (!schoolCode) throw new Error("School code is required");
-      return await apiRequest("POST", `/api/schools/${schoolCode}/complete`);
-    },
-    onSuccess: () => {
-      setShowSuccess(true);
-      queryClient.invalidateQueries({ queryKey: ["/api/schools"] });
+  // File selection handler
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
       toast({
-        title: "Registration Completed!",
-        description: "School has been successfully registered and moved from draft to active status.",
-      });
-      
-      // Auto-redirect after 3 seconds
-      setTimeout(() => {
-        setShowSuccess(false);
-        onComplete?.();
-      }, 3000);
-    },
-    onError: (error) => {
-      console.error('Complete registration error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to complete registration. Please ensure all required information is provided.",
+        title: "Invalid File Type",
+        description: "Please select an image file (JPG, PNG, etc.)",
         variant: "destructive",
       });
-    },
-  });
+      return;
+    }
+    
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        description: "Please select a file smaller than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setSelectedFile(file);
+    
+    // Create preview URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setPreviewUrl(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
-  const handleSaveDraft = async () => {
+  // Remove file handler
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setUploadedDepositSlipUrl("");
+    // Clear file input
+    const fileInput = document.getElementById('deposit-slip-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
+
+  // Upload file function
+  const uploadFile = async () => {
+    if (!selectedFile) return "";
+    
+    setIsUploading(true);
+    try {
+      const result = await uploadMutation.mutateAsync(selectedFile);
+      return result.url;
+    } catch (error) {
+      console.error('Upload failed:', error);
+      return "";
+    }
+  };
+
+  const handleSave = async () => {
     // Validate form first
-    const isValid = form.trigger();
+    const isValid = await form.trigger();
     if (!isValid) {
       toast({
         title: "Validation Error",
@@ -345,67 +388,8 @@ export default function FeesForm({
       depositSlipUrl,
     };
     
-    console.log('Saving draft with data:', submitData);
+    console.log('Saving student fees with data:', submitData);
     saveMutation.mutate(submitData);
-  };
-
-  const handleCompleteRegistration = async () => {
-    // Validate form with completion schema
-    const data = form.getValues();
-    
-    // Manual validation for completion
-    const validationResult = completionSchema.safeParse(data);
-    if (!validationResult.success) {
-      console.log('Validation errors:', validationResult.error.errors);
-      toast({
-        title: "Validation Error",
-        description: validationResult.error.errors[0]?.message || "Please fill all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!data.schoolCode) {
-      toast({
-        title: "Error",
-        description: "School code is required",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!data.disclaimerAccepted) {
-      toast({
-        title: "Error",
-        description: "You must accept the disclaimer to complete registration",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    let depositSlipUrl = uploadedDepositSlipUrl;
-    
-    // Upload file if one is selected and not already uploaded
-    if (selectedFile && !uploadedDepositSlipUrl) {
-      depositSlipUrl = await uploadFile();
-      if (!depositSlipUrl) {
-        return; // Upload failed, don't proceed
-      }
-    }
-
-    const submitData = {
-      ...data,
-      depositSlipUrl,
-    };
-
-    console.log('Completing registration with data:', submitData);
-    
-    // Save the fees data first, then complete registration
-    saveMutation.mutate(submitData, {
-      onSuccess: () => {
-        completeMutation.mutate();
-      },
-    });
   };
 
   // Success message component
@@ -416,9 +400,8 @@ export default function FeesForm({
           <div className="flex items-center">
             <CheckCircle className="w-6 h-6 text-green-600 mr-3" />
             <div>
-              <h3 className="text-lg font-semibold text-green-800">Registration Completed Successfully!</h3>
-              <p className="text-green-700 mt-1">School has been successfully registered and moved from draft to active status.</p>
-              <p className="text-green-600 text-sm mt-2">Redirecting to schools list...</p>
+              <h3 className="text-lg font-semibold text-green-800">Student Fees Saved Successfully!</h3>
+              <p className="text-green-700 mt-1">Student fees information has been saved to the database.</p>
             </div>
           </div>
         </CardContent>
@@ -429,8 +412,8 @@ export default function FeesForm({
   return (
     <Card>
       <div className="bg-primary text-white px-6 py-4 rounded-t-lg flex items-center">
-        <BookOpen className="w-6 h-6 mr-3" />
-        <h3 className="text-lg font-semibold">Step 3: Fees</h3>
+        <Users className="w-6 h-6 mr-3" />
+        <h3 className="text-lg font-semibold">Student Fees</h3>
       </div>
 
       <CardContent className="p-6">
@@ -438,10 +421,23 @@ export default function FeesForm({
           <form className="space-y-6">
             {/* Fee Information */}
             <div className="mb-6">
-              <p className="text-gray-700">
-                <span className="font-semibold">Annual School Registration fee is</span>{" "}
-                <span className="text-primary font-bold text-lg">PKR 20,000.</span>
-              </p>
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 mb-3">Fee Breakdown</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-700">Primary Level:</span>
+                    <p>PKR 2,000 × {calculatedFeesData?.primaryCount || 0} candidates = <span className="font-bold text-primary">PKR {calculatedFeesData?.primaryAmount?.toLocaleString() || 0}</span></p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Middle Level:</span>
+                    <p>PKR 2,250 × {calculatedFeesData?.middleCount || 0} candidates = <span className="font-bold text-primary">PKR {calculatedFeesData?.middleAmount?.toLocaleString() || 0}</span></p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Total Amount:</span>
+                    <p className="text-lg font-bold text-primary">PKR {calculatedFeesData?.totalFee?.toLocaleString() || 0}</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Payment Methods */}
@@ -482,7 +478,7 @@ export default function FeesForm({
               )}
             />
 
-            {/* Beneficiary Information - Updated based on payment method */}
+            {/* Beneficiary Information */}
             <div className="bg-gray-50 p-4 rounded-lg">
               <h5 className="font-semibold text-gray-900 mb-2">Beneficiary Information:</h5>
               <div className="space-y-2 text-sm">
@@ -639,12 +635,12 @@ export default function FeesForm({
               )}
               <FormField
                 control={form.control}
-                name="amount"
+                name="totalAmount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Amount (PKR)</FormLabel>
+                    <FormLabel>Total Amount (PKR)</FormLabel>
                     <FormControl>
-                      <Input {...field} value="20,000" readOnly className="bg-gray-50" />
+                      <Input {...field} value={`${parseInt(field.value || '0').toLocaleString()}`} readOnly className="bg-gray-50" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -831,45 +827,15 @@ export default function FeesForm({
             </div>
 
             {/* Form Actions */}
-            <div className="flex justify-between pt-6 border-t border-gray-200">
-              <Button 
-                type="button" 
-                variant="secondary"
-                onClick={onPrevious}
+            <div className="flex justify-end pt-6 border-t border-gray-200">
+              <Button
+                type="button"
+                onClick={handleSave}
+                className="bg-primary hover:bg-primary-dark text-white"
+                disabled={saveMutation.isPending}
               >
-                Previous: Resources and Support
+                {saveMutation.isPending ? "Saving..." : existingFees ? "Update Student Fees" : "Save Student Fees"}
               </Button>
-              <div className="space-x-3">
-                {isEditMode ? (
-                  <Button
-                    type="button"
-                    onClick={handleSaveDraft}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                    disabled={saveMutation.isPending}
-                  >
-                    {saveMutation.isPending ? "Updating..." : "Update Registration"}
-                  </Button>
-                ) : (
-                  <>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleSaveDraft}
-                      disabled={saveMutation.isPending}
-                    >
-                      {saveMutation.isPending ? "Saving..." : "Save Draft"}
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={handleCompleteRegistration}
-                      disabled={saveMutation.isPending || completeMutation.isPending}
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      {completeMutation.isPending ? "Completing..." : "Complete Registration"}
-                    </Button>
-                  </>
-                )}
-              </div>
             </div>
           </form>
         </Form>

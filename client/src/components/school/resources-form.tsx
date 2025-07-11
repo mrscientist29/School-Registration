@@ -31,19 +31,44 @@ interface ResourcesFormProps {
   onNext?: () => void;
   onPrevious?: () => void;
   schoolCode?: string;
+  isEditMode?: boolean;
 }
 
 export default function ResourcesForm({ 
   onNext, 
   onPrevious, 
-  schoolCode 
+  schoolCode, 
+  isEditMode = false
 }: ResourcesFormProps) {
   const { toast } = useToast();
 
-  // Load existing draft if schoolCode is provided
-  const { data: existingDraft } = useQuery<DraftResources>({
-    queryKey: ["/api/drafts/resources", schoolCode],
+  // Check if school is registered
+  const { data: isRegistered } = useQuery<boolean>({
+    queryKey: ['school-registered', schoolCode],
     enabled: !!schoolCode,
+    queryFn: async () => {
+      const response = await fetch(`/api/schools/${schoolCode}`);
+      return response.ok;
+    }
+  });
+
+  // Determine final mode (edit if registered or forced via prop)
+  const isFinalized = isRegistered || isEditMode;
+
+  // Load existing data
+  const { data: existingData } = useQuery<DraftResources | null>({
+    queryKey: [isFinalized ? "schools/resources" : "drafts/resources", schoolCode],
+    enabled: !!schoolCode,
+    queryFn: async () => {
+      const endpoint = isFinalized 
+        ? `/api/schools/${schoolCode}/resources`
+        : `/api/drafts/resources/${schoolCode}`;
+      
+      const response = await fetch(endpoint);
+      if (!response.ok) return null;
+      return await response.json();
+    },
+    retry: false
   });
 
   const form = useForm<FormData>({
@@ -67,49 +92,78 @@ export default function ResourcesForm({
     },
   });
 
-  // Load existing data into form
+  // Initialize form with appropriate data
   useEffect(() => {
-    if (existingDraft) {
-      const formData = {
-        schoolCode: existingDraft.schoolCode || "",
-        primaryTeachers: existingDraft.primaryTeachers || 0,
-        middleTeachers: existingDraft.middleTeachers || 0,
-        undergraduateTeachers: existingDraft.undergraduateTeachers || 0,
-        graduateTeachers: existingDraft.graduateTeachers || 0,
-        postgraduateTeachers: existingDraft.postgraduateTeachers || 0,
-        educationDegreeTeachers: existingDraft.educationDegreeTeachers || 0,
-        totalWeeks: existingDraft.totalWeeks || 0,
-        weeklyPeriods: existingDraft.weeklyPeriods || 0,
-        periodDuration: existingDraft.periodDuration || 0,
-        maxStudents: existingDraft.maxStudents || 0,
-        facilities: Array.isArray(existingDraft.facilities) ? existingDraft.facilities : [],
-        otherFacility1: existingDraft.otherFacility1 || "",
-        otherFacility2: existingDraft.otherFacility2 || "",
-        otherFacility3: existingDraft.otherFacility3 || "",
-      };
-      form.reset(formData);
+    if (existingData) {
+      form.reset({
+        schoolCode: existingData.schoolCode || schoolCode || "",
+        primaryTeachers: existingData.primaryTeachers || 0,
+        middleTeachers: existingData.middleTeachers || 0,
+        undergraduateTeachers: existingData.undergraduateTeachers || 0,
+        graduateTeachers: existingData.graduateTeachers || 0,
+        postgraduateTeachers: existingData.postgraduateTeachers || 0,
+        educationDegreeTeachers: existingData.educationDegreeTeachers || 0,
+        totalWeeks: existingData.totalWeeks || 0,
+        weeklyPeriods: existingData.weeklyPeriods || 0,
+        periodDuration: existingData.periodDuration || 0,
+        maxStudents: existingData.maxStudents || 0,
+        facilities: Array.isArray(existingData.facilities) ? existingData.facilities : [],
+        otherFacility1: existingData.otherFacility1 || "",
+        otherFacility2: existingData.otherFacility2 || "",
+        otherFacility3: existingData.otherFacility3 || "",
+      });
     } else if (schoolCode) {
       form.setValue("schoolCode", schoolCode);
     }
-  }, [existingDraft, schoolCode, form]);
+  }, [existingData, schoolCode, form]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      return await apiRequest("POST", "/api/drafts/resources", data);
+      const endpoint = isFinalized
+        ? `/api/schools/${data.schoolCode}/resources`
+        : '/api/drafts/resources';
+      const method = isFinalized ? 'PATCH' : 'POST';
+
+      const response = await fetch(endpoint, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...data,
+          schoolCode: schoolCode
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(isFinalized ? 'Failed to update resources' : 'Failed to save draft');
+      }
+
+      return await response.json();
     },
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "Resources draft saved successfully",
+        description: isFinalized
+          ? "Resources updated successfully"
+          : "Resources draft saved successfully",
       });
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to save resources draft",
+        description: error.message,
         variant: "destructive",
       });
     },
+  });
+
+  const handleSubmit = form.handleSubmit((data) => {
+    saveMutation.mutate(data, {
+      onSuccess: () => {
+        if (isFinalized && onNext) {
+          onNext();
+        }
+      }
+    });
   });
 
   const handleSaveDraft = () => {
@@ -511,7 +565,8 @@ export default function ResourcesForm({
                   type="button" 
                   variant="outline"
                   onClick={handleSaveDraft}
-                  disabled={saveMutation.isPending}
+                  disabled={isFinalized}
+                  className="mr-2"
                 >
                   Save Draft
                 </Button>

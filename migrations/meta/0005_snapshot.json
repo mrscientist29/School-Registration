@@ -1,0 +1,1538 @@
+{
+  "id": "f73d81d5-0bea-486f-bb35-ada0980c6f16",
+  "prevId": "ccb049aa-4ed8-4d13-96e1-13d505bce52b",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.audit_logs": {
+      "name": "audit_logs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "action": {
+          "name": "action",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "username": {
+          "name": "username",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ip_address": {
+          "name": "ip_address",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resource": {
+          "name": "resource",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resource_id": {
+          "name": "resource_id",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "old_data": {
+          "name": "old_data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "new_data": {
+          "name": "new_data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "details": {
+          "name": "details",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "success": {
+          "name": "success",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.draft_fees": {
+      "name": "draft_fees",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "school_code": {
+          "name": "school_code",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payment_method": {
+          "name": "payment_method",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cheque_number": {
+          "name": "cheque_number",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cheque_date": {
+          "name": "cheque_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deposit_slip_number": {
+          "name": "deposit_slip_number",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deposit_date": {
+          "name": "deposit_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deposit_pay_order_number": {
+          "name": "deposit_pay_order_number",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'20000.00'"
+        },
+        "head_of_institution": {
+          "name": "head_of_institution",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "disclaimer_accepted": {
+          "name": "disclaimer_accepted",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "head_signature": {
+          "name": "head_signature",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "institution_stamp": {
+          "name": "institution_stamp",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "draft_fees_school_code_draft_schools_school_code_fk": {
+          "name": "draft_fees_school_code_draft_schools_school_code_fk",
+          "tableFrom": "draft_fees",
+          "tableTo": "draft_schools",
+          "columnsFrom": [
+            "school_code"
+          ],
+          "columnsTo": [
+            "school_code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "draft_fees_school_code_unique": {
+          "name": "draft_fees_school_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "school_code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.draft_resources": {
+      "name": "draft_resources",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "school_code": {
+          "name": "school_code",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "primary_teachers": {
+          "name": "primary_teachers",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "middle_teachers": {
+          "name": "middle_teachers",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "undergraduate_teachers": {
+          "name": "undergraduate_teachers",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "graduate_teachers": {
+          "name": "graduate_teachers",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "postgraduate_teachers": {
+          "name": "postgraduate_teachers",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "education_degree_teachers": {
+          "name": "education_degree_teachers",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "total_weeks": {
+          "name": "total_weeks",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weekly_periods": {
+          "name": "weekly_periods",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "period_duration": {
+          "name": "period_duration",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "max_students": {
+          "name": "max_students",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "facilities": {
+          "name": "facilities",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "other_facility_1": {
+          "name": "other_facility_1",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "other_facility_2": {
+          "name": "other_facility_2",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "other_facility_3": {
+          "name": "other_facility_3",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "draft_resources_school_code_draft_schools_school_code_fk": {
+          "name": "draft_resources_school_code_draft_schools_school_code_fk",
+          "tableFrom": "draft_resources",
+          "tableTo": "draft_schools",
+          "columnsFrom": [
+            "school_code"
+          ],
+          "columnsTo": [
+            "school_code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "draft_resources_school_code_unique": {
+          "name": "draft_resources_school_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "school_code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.draft_schools": {
+      "name": "draft_schools",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "school_code": {
+          "name": "school_code",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "school_name": {
+          "name": "school_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "school_address": {
+          "name": "school_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "contact_numbers": {
+          "name": "contact_numbers",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "school_type": {
+          "name": "school_type",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "academic_year_start": {
+          "name": "academic_year_start",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "academic_year_end": {
+          "name": "academic_year_end",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "grade_level_from": {
+          "name": "grade_level_from",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "grade_level_till": {
+          "name": "grade_level_till",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "languages": {
+          "name": "languages",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "other_language": {
+          "name": "other_language",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "principal_name": {
+          "name": "principal_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "principal_email": {
+          "name": "principal_email",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "principal_cell": {
+          "name": "principal_cell",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "primary_coordinator_name": {
+          "name": "primary_coordinator_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "primary_coordinator_email": {
+          "name": "primary_coordinator_email",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "primary_coordinator_cell": {
+          "name": "primary_coordinator_cell",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "middle_coordinator_name": {
+          "name": "middle_coordinator_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "middle_coordinator_email": {
+          "name": "middle_coordinator_email",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "middle_coordinator_cell": {
+          "name": "middle_coordinator_cell",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "grade_iv": {
+          "name": "grade_iv",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "grade_v": {
+          "name": "grade_v",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "grade_vi": {
+          "name": "grade_vi",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "grade_vii": {
+          "name": "grade_vii",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "grade_viii": {
+          "name": "grade_viii",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "psp_msp_registration": {
+          "name": "psp_msp_registration",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "draft_schools_school_code_unique": {
+          "name": "draft_schools_school_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "school_code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.fees": {
+      "name": "fees",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "school_code": {
+          "name": "school_code",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payment_method": {
+          "name": "payment_method",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cheque_number": {
+          "name": "cheque_number",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cheque_date": {
+          "name": "cheque_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deposit_slip_number": {
+          "name": "deposit_slip_number",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deposit_date": {
+          "name": "deposit_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deposit_pay_order_number": {
+          "name": "deposit_pay_order_number",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'20000.00'"
+        },
+        "head_of_institution": {
+          "name": "head_of_institution",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "disclaimer_accepted": {
+          "name": "disclaimer_accepted",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "head_signature": {
+          "name": "head_signature",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "institution_stamp": {
+          "name": "institution_stamp",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payment_screenshot": {
+          "name": "payment_screenshot",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "fees_school_code_schools_school_code_fk": {
+          "name": "fees_school_code_schools_school_code_fk",
+          "tableFrom": "fees",
+          "tableTo": "schools",
+          "columnsFrom": [
+            "school_code"
+          ],
+          "columnsTo": [
+            "school_code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.resources": {
+      "name": "resources",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "school_code": {
+          "name": "school_code",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "primary_teachers": {
+          "name": "primary_teachers",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "middle_teachers": {
+          "name": "middle_teachers",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "undergraduate_teachers": {
+          "name": "undergraduate_teachers",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "graduate_teachers": {
+          "name": "graduate_teachers",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "postgraduate_teachers": {
+          "name": "postgraduate_teachers",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "education_degree_teachers": {
+          "name": "education_degree_teachers",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "total_weeks": {
+          "name": "total_weeks",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weekly_periods": {
+          "name": "weekly_periods",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "period_duration": {
+          "name": "period_duration",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "max_students": {
+          "name": "max_students",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "facilities": {
+          "name": "facilities",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "other_facility_1": {
+          "name": "other_facility_1",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "other_facility_2": {
+          "name": "other_facility_2",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "other_facility_3": {
+          "name": "other_facility_3",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "resources_school_code_schools_school_code_fk": {
+          "name": "resources_school_code_schools_school_code_fk",
+          "tableFrom": "resources",
+          "tableTo": "schools",
+          "columnsFrom": [
+            "school_code"
+          ],
+          "columnsTo": [
+            "school_code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.school_credentials": {
+      "name": "school_credentials",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "school_code": {
+          "name": "school_code",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "username": {
+          "name": "username",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password": {
+          "name": "password",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "school_credentials_school_code_schools_school_code_fk": {
+          "name": "school_credentials_school_code_schools_school_code_fk",
+          "tableFrom": "school_credentials",
+          "tableTo": "schools",
+          "columnsFrom": [
+            "school_code"
+          ],
+          "columnsTo": [
+            "school_code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "school_credentials_username_unique": {
+          "name": "school_credentials_username_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "username"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.schools": {
+      "name": "schools",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "school_code": {
+          "name": "school_code",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "school_name": {
+          "name": "school_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "school_address": {
+          "name": "school_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "contact_numbers": {
+          "name": "contact_numbers",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "school_type": {
+          "name": "school_type",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "academic_year_start": {
+          "name": "academic_year_start",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "academic_year_end": {
+          "name": "academic_year_end",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "grade_level_from": {
+          "name": "grade_level_from",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "grade_level_till": {
+          "name": "grade_level_till",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "languages": {
+          "name": "languages",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "other_language": {
+          "name": "other_language",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "principal_name": {
+          "name": "principal_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "principal_email": {
+          "name": "principal_email",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "principal_cell": {
+          "name": "principal_cell",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "primary_coordinator_name": {
+          "name": "primary_coordinator_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "primary_coordinator_email": {
+          "name": "primary_coordinator_email",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "primary_coordinator_cell": {
+          "name": "primary_coordinator_cell",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "middle_coordinator_name": {
+          "name": "middle_coordinator_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "middle_coordinator_email": {
+          "name": "middle_coordinator_email",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "middle_coordinator_cell": {
+          "name": "middle_coordinator_cell",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "grade_iv": {
+          "name": "grade_iv",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "grade_v": {
+          "name": "grade_v",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "grade_vi": {
+          "name": "grade_vi",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "grade_vii": {
+          "name": "grade_vii",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "grade_viii": {
+          "name": "grade_viii",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "psp_msp_registration": {
+          "name": "psp_msp_registration",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
+        "registration_completed_at": {
+          "name": "registration_completed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "schools_school_code_unique": {
+          "name": "schools_school_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "school_code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sessions": {
+      "name": "sessions",
+      "schema": "",
+      "columns": {
+        "sid": {
+          "name": "sid",
+          "type": "varchar",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "sess": {
+          "name": "sess",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expire": {
+          "name": "expire",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "IDX_session_expire": {
+          "name": "IDX_session_expire",
+          "columns": [
+            {
+              "expression": "expire",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.student_fees": {
+      "name": "student_fees",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "school_code": {
+          "name": "school_code",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payment_method": {
+          "name": "payment_method",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cheque_number": {
+          "name": "cheque_number",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cheque_date": {
+          "name": "cheque_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deposit_slip_number": {
+          "name": "deposit_slip_number",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deposit_date": {
+          "name": "deposit_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deposit_pay_order_number": {
+          "name": "deposit_pay_order_number",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_amount": {
+          "name": "total_amount",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "primary_amount": {
+          "name": "primary_amount",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0.00'"
+        },
+        "middle_amount": {
+          "name": "middle_amount",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0.00'"
+        },
+        "primary_candidates": {
+          "name": "primary_candidates",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "middle_candidates": {
+          "name": "middle_candidates",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "head_of_institution": {
+          "name": "head_of_institution",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "disclaimer_accepted": {
+          "name": "disclaimer_accepted",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "head_signature": {
+          "name": "head_signature",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "institution_stamp": {
+          "name": "institution_stamp",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payment_screenshot": {
+          "name": "payment_screenshot",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "student_fees_school_code_schools_school_code_fk": {
+          "name": "student_fees_school_code_schools_school_code_fk",
+          "tableFrom": "student_fees",
+          "tableTo": "schools",
+          "columnsFrom": [
+            "school_code"
+          ],
+          "columnsTo": [
+            "school_code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.students": {
+      "name": "students",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "school_code": {
+          "name": "school_code",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "student_name": {
+          "name": "student_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "father_name": {
+          "name": "father_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gender": {
+          "name": "gender",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date_of_birth": {
+          "name": "date_of_birth",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grade": {
+          "name": "grade",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "students_school_code_schools_school_code_fk": {
+          "name": "students_school_code_schools_school_code_fk",
+          "tableFrom": "students",
+          "tableTo": "schools",
+          "columnsFrom": [
+            "school_code"
+          ],
+          "columnsTo": [
+            "school_code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "students_student_id_unique": {
+          "name": "students_student_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "student_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_name": {
+          "name": "last_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "profile_image_url": {
+          "name": "profile_image_url",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "role": {
+          "name": "role",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'admin'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
